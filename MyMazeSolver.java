@@ -25,8 +25,7 @@ public class MyMazeSolver extends MazeSolver {
     
     //2d arrayList to keep track of the maze
     private static List<List<Integer> > arrayList = new ArrayList<List<Integer> >();
-    //arrayList.get(1).add(0, 13); changes values
-    //arrayList.add(new ArrayList<Integer>()); adds column
+    
     //keep track of starting positions
     private int currX = 0;
     private int currY = 0;
@@ -141,6 +140,7 @@ public class MyMazeSolver extends MazeSolver {
     }
     
     public int takeTurn() {
+        //check if program is done (only gives up on starting position)
         if (isDone) {
             return GIVE_UP;
         }
@@ -175,7 +175,7 @@ public class MyMazeSolver extends MazeSolver {
     }
     
     /**
-     * Marks our arrayList with a 1 to indicate where our mazeSolver has been.
+     * Change arrayList elements to indicate where our mazeSolver has been. (with a 1)
      * If we are standing over the starting position, and our arrayList doesn't contain
      * any 0, and the arrayList is bigger than 2x2 grid, we set containsZero to false
      * to quit the program in takeTurn()
