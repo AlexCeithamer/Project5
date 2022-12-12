@@ -55,6 +55,7 @@ public class MyMazeSolver extends MazeSolver {
      * @author Alex Ceithamer
      */
     public void reset() {
+        direction = NORTH;
         currentWeight = 0;
         arrayList.clear();
         //initialize arrayList
@@ -185,6 +186,7 @@ public class MyMazeSolver extends MazeSolver {
         }
         else if (!isOpponentNearby() && evading) {
             evading = false;
+            turnRight();
             return TURN_RIGHT;
         }
         if (pickupItems()) {
@@ -233,6 +235,7 @@ public class MyMazeSolver extends MazeSolver {
         hasDoneNothing = false;
         if (isFacingOpponent()) {
             evading = true;
+            turnRight();
             return TURN_RIGHT;
             
         }
@@ -240,6 +243,7 @@ public class MyMazeSolver extends MazeSolver {
             return notFacingWall();
         }
         evading = false;
+        turnRight();
         return TURN_RIGHT;
         
         
@@ -263,7 +267,7 @@ public class MyMazeSolver extends MazeSolver {
             //
             for (int i = 0; i < arrayList.size(); ++i) {
                 if (arrayList.contains(0)) {
-                    //this should exit the loop
+                    //this should exit the loop if arrayList contains zero
                     i = arrayList.size();
                 } 
                 else if (i == arrayList.size() - 1 && 
