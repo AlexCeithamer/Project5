@@ -2,10 +2,11 @@
 import java.util.*;
 
 /**
- * Write a description of class MyMazeSolver here.
+ * Solves mazes, avoids opponents. Uses a 2d ArrayList to map out the maze to ensure
+ * each spot of the maze has been visited. Picks up items along the way
  *
- * @author (your name)
- * @version (a version number or a date)
+ * @author Alex Ceithamer
+ * @version 12/11/2022
  */
 public class MyMazeSolver extends MazeSolver {
     private static final int NORTH = 0;
@@ -32,7 +33,14 @@ public class MyMazeSolver extends MazeSolver {
     private int numRows = 0;
     private int numCols = 0;
     private boolean isDone = false;
+    private boolean hasDoneNothing = false;
+    private boolean evading = false;
     
+    /**
+     * Starts the mazeSolver game
+     * 
+     * @author Alex Ceithamer
+     */
     public static void main(String[] args) {
         
         TheAmazingRace.play(new MazeSolver[]{ new MyMazeSolver(),
@@ -40,7 +48,12 @@ public class MyMazeSolver extends MazeSolver {
         
     }
     
-    
+    /**
+     * resets currentWeight and our 2d arrayList, then initializes it for the next game
+     * by setting the starting position at row 0 col 0.
+     * 
+     * @author Alex Ceithamer
+     */
     public void reset() {
         currentWeight = 0;
         arrayList.clear();
@@ -51,6 +64,11 @@ public class MyMazeSolver extends MazeSolver {
         numCols++;
     }
     
+    /**
+     * sets the name of MyMazeSolver
+     * 
+     * @author Alex Ceithamer
+     */
     public String getName() {
         return "ALEXandBRETT";
     }
@@ -68,28 +86,24 @@ public class MyMazeSolver extends MazeSolver {
         justMovedForward = true;
         lookingLeft = false;
         turnedRight = false;
-        //markArray();
         if (direction == NORTH) {
             currY--;
             if (currY < 0) {
                 addRowToTop();
                 currY++;
             }
-            //row--;
         }
         else if (direction == EAST) {
             currX++;
             if (currX >= arrayList.get(0).size()) {
                 addColToBack();
             }
-            //col++;
         }
         else if (direction == SOUTH) {
             currY++;
             if (currY > arrayList.size() - 1) {
                 addRowToBottom();
             }
-            //row++;
         }
         else if (direction == WEST) {
             currX--;
@@ -97,12 +111,15 @@ public class MyMazeSolver extends MazeSolver {
                 addColToFront();
                 currX++;
             }
-            //col++;
         }
         markArray();
     }
     
-    
+    /**
+     * sets lookingLeft to true to use in the takeTurn() method, updates direction
+     * 
+     * @author Alex Ceithamer
+     */
     private void turnLeft() {
         direction = direction - 1;
         //need to check if a wall is to the left once we move forward
@@ -113,6 +130,12 @@ public class MyMazeSolver extends MazeSolver {
             direction = WEST;
         }
     }
+    
+    /**
+     * sets turnedRight to true to use in the takeTurn() method, updates direction
+     * 
+     * @author Alex Ceithamer
+     */
     private void turnRight() {
         direction = direction + 1;
         justMovedForward = false;
@@ -123,14 +146,21 @@ public class MyMazeSolver extends MazeSolver {
         }
     }
     
-    
+    /**
+     * picks up items as long as we have the capacity to do so and it isn't a bomb
+     * so we maximize value of our knapsack
+     * 
+     * @author Alex Ceithamer
+     */
     private boolean pickupItems() {
         if (isItemAvailableToPickUp()) {
             int itemWeight = getWeightOfItem();
             int newWeight;
             newWeight = currentWeight + itemWeight;
             if (newWeight <= KNAPSACK_CAPACITY) {
-                if (itemWeight < KNAPSACK_CAPACITY - 1) {
+                //avoids picking up bombs to maximize value of knapsack
+                if (itemWeight < KNAPSACK_CAPACITY - 1 && 
+                                    itemWeight != Integer.MAX_VALUE - 1) {
                     currentWeight = currentWeight + itemWeight;
                     return true;
                 } 
@@ -139,10 +169,23 @@ public class MyMazeSolver extends MazeSolver {
         return false;
     }
     
+    /**
+     * maing driver for the mazeSolver. If we have been through the entire maze AND we
+     * are back at the starting position, we terminate. We pick up items if we are standing
+     * over an item. Move forward/look left/turn right otherwise.
+     * 
+     * @author Alex Ceithamer
+     */
     public int takeTurn() {
-        //check if program is done (only gives up on starting position)
         if (isDone) {
             return GIVE_UP;
+        }
+        if (isOpponentNearby() || hasDoneNothing == false){
+            return evade();
+        }
+        else if (!isOpponentNearby() && evading) {
+            evading = false;
+            return TURN_RIGHT;
         }
         if (pickupItems()) {
             return PICK_UP_ITEM;
@@ -152,17 +195,22 @@ public class MyMazeSolver extends MazeSolver {
             return TURN_LEFT;
         }
         if (lookingLeft) {
-            if (!isFacingWall()) {
-                moveForward();
-                return MOVE_FORWARD;
-            }
-            else {
-                turnRight();
-                return TURN_RIGHT;
-            }
+            return notFacingWall();
         }
         if (turnedRight) {
-            if (!isFacingWall()) {
+            return notFacingWall();
+        }
+        return GIVE_UP;
+    }
+    
+    /**
+     * If not facing a wall, move forward, otherwise turn right. This is a helper method
+     * to reduce code repetition.
+     * 
+     * @author Alex Ceithamer
+     */
+    private int notFacingWall() {
+        if (!isFacingWall()) {
                 moveForward();
                 return MOVE_FORWARD;
             }
@@ -170,8 +218,31 @@ public class MyMazeSolver extends MazeSolver {
                 turnRight();
                 return TURN_RIGHT;
             }
+    }
+    
+    /**
+     * Attempts to evade opponents. First attempts to wait for 1 turn. if it has waited
+     * and an opponent is still nearby, it will turn if facing the opponent, or 
+     * move if not facing the opponent.
+     */
+    private int evade() {
+        if (!hasDoneNothing && !isOpponentAdjacent()) {
+            hasDoneNothing = true;
+            return DO_NOTHING;
         }
-        return GIVE_UP;
+        hasDoneNothing = false;
+        if (isFacingOpponent()) {
+            evading = true;
+            return TURN_RIGHT;
+            
+        }
+        else if (evading && !isFacingOpponent() && isOpponentAdjacent()) {
+            return notFacingWall();
+        }
+        evading = false;
+        return TURN_RIGHT;
+        
+        
     }
     
     /**
@@ -196,8 +267,8 @@ public class MyMazeSolver extends MazeSolver {
                     i = arrayList.size();
                 } 
                 else if (i == arrayList.size() - 1 && 
-                            arrayList.size() > 2 &&
-                            arrayList.get(0).size() > 2) {
+                            arrayList.size() > 3 &&
+                            arrayList.get(0).size() > 3) {
                     containsZero = false;
                 }
             
